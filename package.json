@@ -1,22 +1,30 @@
 {
   "name": "koishi-plugin-message-blocker",
-  "description": "可以设置违禁词、图等，监听到后可选择撤回、禁言、警告等",
-  "version": "0.0.1",
+  "description": "可以设置违禁词、违禁图等，监听到后可选择撤回、禁言、警告等。违禁图的原理是感知哈希，支持相似度",
+  "version": "0.0.4",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
     "lib",
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jin1c-3/koishi-plugin-message-blocker.git"
+  },
   "license": "MIT",
-  "scripts": {},
   "keywords": [
     "chatbot",
     "koishi",
     "plugin"
   ],
-  "devDependencies": {},
   "peerDependencies": {
-    "koishi": "4.18.1"
+    "koishi": "^4.18.0",
+    "sharp": "^0.33.0"
+  },
+  "dependencies": {
+    "fastest-levenshtein": "^1.0.16",
+    "imghash": "^0.0.9",
+    "pinyin-pro": "^3.26.0"
   }
 }
