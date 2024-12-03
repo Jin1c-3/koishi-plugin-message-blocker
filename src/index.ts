@@ -65,26 +65,31 @@ export const Config: Schema<Config> = Schema.intersect([
       delete_flag: Schema.boolean().default(true),
     }),
     Schema.object({
-      alert_flag: Schema.boolean().default(false),
-    }),
-    Schema.object({
       bubble: Schema.boolean().default(true),
     }),
     Schema.intersect([
       Schema.object({
-        self_delete: Schema.boolean().default(false),
+        alert_flag: Schema.boolean().default(false),
       }),
       Schema.union([
-        Schema.object({
-          self_delete: Schema.const(true).required(),
-          self_delete_duration: Schema.number()
-            .role("slider")
-            .step(1)
-            .min(5)
-            .max(5 * 60)
-            .default(100),
-        }),
-        Schema.object({}),
+        Schema.intersect([
+          Schema.object({
+            alert_flag: Schema.const(true).required(),
+            self_delete: Schema.boolean().default(false),
+          }),
+          Schema.union([
+            Schema.object({
+              self_delete: Schema.const(true).required(),
+              self_delete_duration: Schema.number()
+                .role("slider")
+                .step(1)
+                .min(5)
+                .max(5 * 60)
+                .default(100),
+            }),
+            Schema.object({}),
+          ]),
+        ]),
       ]),
     ]),
   ]),
