@@ -555,11 +555,11 @@ export function apply(ctx: Context, config: Config) {
           const hash = await imghash.hash(buffer);
 
           // 异步保存缓存
-          if (ctx.cache) {
+          if (ctx.cache && img.filename && hash) {
             ctx.cache
               .set("image-hash", img.filename, hash, 60 * 60 * 1000 * 24)
               .catch((err) => {
-                logger.error("Cache set error:", err);
+                logger.error("Cache set error，但不影响运行:\n", err);
               });
           }
 
