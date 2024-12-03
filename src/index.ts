@@ -396,11 +396,11 @@ export function apply(ctx: Context, config: Config) {
     });
 
   ctx
-    .command("message-blocker.list [group:string]", "", { authority: 3 })
+    .command("message-blocker.list [...groups:string]", "", { authority: 3 })
     .option("page", "-p <page:natural>", { fallback: 1 })
-    .action(async ({ session, options }, group) => {
+    .action(async ({ session, options }, ...groups) => {
       try {
-        [group] = await validateGroups(session, group ? [group] : []);
+        groups = await validateGroups(session, groups);
       } catch (e) {
         return e.message;
       }
@@ -409,6 +409,7 @@ export function apply(ctx: Context, config: Config) {
         .join(["messageBlockerGuild", "messageBlockerRule"], (G, R) =>
           $.eq(G.ruleId, R.id)
         )
+        .where((row) => $.in(row.messageBlockerGuild.guild, groups))
         .orderBy("messageBlockerRule.id")
         .limit(config.page_size)
         .offset((options.page - 1) * config.page_size)
