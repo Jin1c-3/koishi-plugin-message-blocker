@@ -303,41 +303,52 @@ export function apply(ctx: Context, config: Config) {
         // 存储数据
         await Promise.all(
           images_to_save.map(async (i) => {
-            // 获取图片数据
-            const buffer = await transferImage(
-              Buffer.from(
-                await ctx.http.get(i.src, {
-                  responseType: "arraybuffer",
-                })
-              )
-            );
-            // 转存图片
-            const img_path = path.join(storage_root, i.filename);
-            fs.writeFileSync(img_path, buffer);
-            // 获取图片hash
-            const hash = await imghash.hash(img_path);
-            // 检查规则是否已存在
-            const existingRules = await ctx.database.get("messageBlockerRule", {
-              actual: hash,
-            });
-            let ruleId: number;
-            if (existingRules.length) {
-              ruleId = existingRules[0].id;
-            } else {
-              // 添加到数据库
-              const res = await ctx.database.create("messageBlockerRule", {
-                type: RuleType.IMAGE,
-                origin: i.filename,
-                actual: hash,
-              });
-              ruleId = res.id;
+            try {
+              // 获取图片数据
+              const buffer = await transferImage(
+                Buffer.from(
+                  await ctx.http.get(i.src, {
+                    responseType: "arraybuffer",
+                  })
+                )
+              );
+              // 转存图片
+              const img_path = path.join(storage_root, i.filename);
+              fs.writeFileSync(img_path, buffer);
+              // 获取图片hash
+              const hash = await imghash.hash(img_path);
+              // 检查规则是否已存在
+              const existingRules = await ctx.database.get(
+                "messageBlockerRule",
+                {
+                  actual: hash,
+                }
+              );
+              let ruleId: number;
+              if (existingRules.length) {
+                ruleId = existingRules[0].id;
+              } else {
+                // 添加到数据库
+                const res = await ctx.database.create("messageBlockerRule", {
+                  type: RuleType.IMAGE,
+                  origin: i.filename,
+                  actual: hash,
+                });
+                ruleId = res.id;
+              }
+              // 关联规则与群组
+              const batch = groups.map((group) => ({
+                guild: group,
+                ruleId: ruleId,
+              }));
+              await ctx.database.upsert("messageBlockerGuild", batch);
+            } catch (e) {
+              logger.error(
+                `处理图片时出错，但并不影响运行: ${e}\nimage info: ${JSON.stringify(
+                  i
+                )}`
+              );
             }
-            // 关联规则与群组
-            const batch = groups.map((group) => ({
-              guild: group,
-              ruleId: ruleId,
-            }));
-            await ctx.database.upsert("messageBlockerGuild", batch);
           })
         );
       } else {
@@ -564,8 +575,12 @@ export function apply(ctx: Context, config: Config) {
           }
 
           return hash;
-        } catch (error) {
-          logger.error("Error processing image:", error);
+        } catch (e) {
+          logger.error(
+            `处理图片时出错，但并不影响运行: ${e}\nimage info: ${JSON.stringify(
+              img
+            )}`
+          );
           return null;
         }
       })
