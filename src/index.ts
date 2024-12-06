@@ -548,6 +548,13 @@ export function apply(ctx: Context, config: Config) {
 
     const hashes = await Promise.all(
       images.map(async (img) => {
+        if (
+          img.src === undefined ||
+          img.filename === undefined ||
+          img.src.length === 0 ||
+          img.filename.length === 0
+        )
+          return null;
         try {
           // 优先使用缓存
           if (ctx.cache) {
@@ -588,8 +595,8 @@ export function apply(ctx: Context, config: Config) {
 
     // 过滤无效的hash并检查相似度
     const validHashes = hashes.filter(Boolean);
-    for (const rule of rules) {
-      for (const hash of validHashes) {
+    for (const hash of validHashes) {
+      for (const rule of rules) {
         const dist = distance(hash, rule);
         if (
           dist / Math.min(rule.length, hash.length) <=
