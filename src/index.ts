@@ -1,4 +1,4 @@
-import { Context, Schema, h, $, difference } from "koishi";
+import { Context, Schema, h, $, difference, Session } from "koishi";
 import {} from "@koishijs/cache";
 import fs from "fs";
 import path from "path";
@@ -174,7 +174,7 @@ export function apply(ctx: Context, config: Config) {
   }
 
   // 返回值表示是否next()
-  async function handleMatchedMessage(session) {
+  async function handleMatchedMessage(session: Session) {
     if (config.delete_flag) {
       await session.bot.deleteMessage(session.guildId, session.messageId);
     }
@@ -191,7 +191,7 @@ export function apply(ctx: Context, config: Config) {
       );
       if (config.self_delete) {
         ctx.setTimeout(() => {
-          session.bot.deleteMessage(session.guildId, res);
+          session.bot.deleteMessage(session.guildId, res[0]);
         }, config.self_delete_duration * 1000);
       }
     }
@@ -203,7 +203,7 @@ export function apply(ctx: Context, config: Config) {
 
   // 公共函数：验证群组
   async function validateGroups(
-    session,
+    session: Session,
     inputGroups: string[] = []
   ): Promise<string[]> {
     if (!inputGroups.length && !session.guildId) {
