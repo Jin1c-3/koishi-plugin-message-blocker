@@ -287,11 +287,20 @@ export function apply(ctx: Context, config: Config) {
         }
         h_input = [...h.select(input, "img"), ...h.select(input, "image")];
         let images_to_save = h_input
-          .filter(
-            (value, index, self) =>
+          .filter((value, index, self) => {
+            const value_filename =
+              value.attrs.filename ||
+              value.attrs.fileUnique + "." + value.attrs.file.split(".").pop();
+            return (
               index ===
-              self.findIndex((i) => i.attrs.filename === value.attrs.filename)
-          )
+              self.findIndex((i) => {
+                const i_filename =
+                  i.attrs.filename ||
+                  i.attrs.fileUnique + "." + i.attrs.file.split(".").pop();
+                return i_filename === value_filename;
+              })
+            );
+          })
           .map((i) => i.attrs);
         // 让用户确认
         await session.send(session.text(".confirm", [images_to_save.length]));
@@ -313,7 +322,9 @@ export function apply(ctx: Context, config: Config) {
                 )
               );
               // 转存图片
-              const img_path = path.join(storage_root, i.filename);
+              const filename =
+                i.filename || i.fileUnique + "." + i.file.split(".").pop();
+              const img_path = path.join(storage_root, filename);
               fs.writeFileSync(img_path, buffer);
               // 获取图片hash
               const hash = await imghash.hash(img_path);
@@ -331,7 +342,7 @@ export function apply(ctx: Context, config: Config) {
                 // 添加到数据库
                 const res = await ctx.database.create("messageBlockerRule", {
                   type: RuleType.IMAGE,
-                  origin: i.filename,
+                  origin: filename,
                   actual: hash,
                 });
                 ruleId = res.id;
@@ -548,17 +559,19 @@ export function apply(ctx: Context, config: Config) {
 
     const hashes = await Promise.all(
       images.map(async (img) => {
+        const filename =
+          img.filename || img.fileUnique + "." + img.file.split(".").pop();
         if (
           img.src === undefined ||
-          img.filename === undefined ||
+          filename === undefined ||
           img.src.length === 0 ||
-          img.filename.length === 0
+          filename.length === 0
         )
           return null;
         try {
           // 优先使用缓存
           if (ctx.cache) {
-            const hash = await ctx.cache.get("image-hash", img.filename);
+            const hash = await ctx.cache.get("image-hash", filename);
             if (hash) return hash;
           }
 
@@ -573,9 +586,9 @@ export function apply(ctx: Context, config: Config) {
           const hash = await imghash.hash(buffer);
 
           // 异步保存缓存
-          if (ctx.cache && img.filename && hash) {
+          if (ctx.cache && filename && hash) {
             ctx.cache
-              .set("image-hash", img.filename, hash, 60 * 60 * 1000 * 24)
+              .set("image-hash", filename, hash, 60 * 60 * 1000 * 24)
               .catch((err) => {
                 logger.error("Cache set error，但不影响运行:\n", err);
               });
