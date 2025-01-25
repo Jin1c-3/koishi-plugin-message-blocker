@@ -254,6 +254,7 @@ export function apply(ctx: Context, config: Config) {
     return inner_msg;
   }
 
+  // 增
   ctx
     .command("message-blocker.add <type:natural> [...groups:string]", "", {
       authority: 3,
@@ -287,20 +288,10 @@ export function apply(ctx: Context, config: Config) {
         }
         h_input = [...h.select(input, "img"), ...h.select(input, "image")];
         let images_to_save = h_input
-          .filter((value, index, self) => {
-            const value_filename =
-              value.attrs.filename ||
-              value.attrs.fileUnique + "." + value.attrs.file.split(".").pop();
-            return (
-              index ===
-              self.findIndex((i) => {
-                const i_filename =
-                  i.attrs.filename ||
-                  i.attrs.fileUnique + "." + i.attrs.file.split(".").pop();
-                return i_filename === value_filename;
-              })
-            );
-          })
+          .filter(
+            (value, index, self) =>
+              index === self.findIndex((i) => i.attrs.file === value.attrs.file)
+          )
           .map((i) => i.attrs);
         // 让用户确认
         await session.send(session.text(".confirm", [images_to_save.length]));
@@ -322,8 +313,7 @@ export function apply(ctx: Context, config: Config) {
                 )
               );
               // 转存图片
-              const filename =
-                i.filename || i.fileUnique + "." + i.file.split(".").pop();
+              const filename = i.file;
               const img_path = path.join(storage_root, filename);
               fs.writeFileSync(img_path, buffer);
               // 获取图片hash
@@ -417,6 +407,7 @@ export function apply(ctx: Context, config: Config) {
       return session.text(".success");
     });
 
+  // 查
   ctx
     .command("message-blocker.list [...groups:string]", "", { authority: 3 })
     .option("page", "-p <page:natural>", { fallback: 1 })
@@ -448,6 +439,7 @@ export function apply(ctx: Context, config: Config) {
       return result;
     });
 
+  // 删
   ctx
     .command("message-blocker.del <ids:string> [...groups:string]", "", {
       authority: 3,
@@ -559,8 +551,7 @@ export function apply(ctx: Context, config: Config) {
 
     const hashes = await Promise.all(
       images.map(async (img) => {
-        const filename =
-          img.filename || img.fileUnique + "." + img.file.split(".").pop();
+        const filename = img.file;
         if (
           img.src === undefined ||
           filename === undefined ||
