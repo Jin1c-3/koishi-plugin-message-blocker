@@ -221,7 +221,7 @@ export function apply(ctx: Context, config: Config) {
       );
     }
 
-    if (groups.some((g) => !bot_groups.includes(g))) {
+    if (groups.some((g) => !bot_groups?.includes(g))) {
       throw new Error(
         session.text("commands.message-blocker.messages.invalid_group")
       );
@@ -630,7 +630,7 @@ export function apply(ctx: Context, config: Config) {
         session.userId
       )
     };
-    if (!member.roles.includes("member")) return next();
+    if (!member?.roles?.includes("member")) return next();
 
     // 获取群组规则
     const origin_rules = await ctx.database
