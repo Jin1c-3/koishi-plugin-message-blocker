@@ -1,5 +1,5 @@
 import { Context, Schema, h, $, difference, Session } from "koishi";
-import {} from "@koishijs/cache";
+import { } from "@koishijs/cache";
 import fs from "fs";
 import path from "path";
 import imghash from "imghash";
@@ -213,11 +213,15 @@ export function apply(ctx: Context, config: Config) {
     }
 
     let groups = inputGroups.length ? inputGroups : [session.guildId];
-    const bot_groups = (await session.bot.getGuildList()).data.map(
-      (guild) => guild.id
-    );
 
-    if (groups.some((g) => !bot_groups.includes(g))) {
+    let bot_groups
+    if (typeof session.bot?.getGuildList === 'function') {
+      bot_groups = (await session.bot.getGuildList()).data.map(
+        (guild) => guild.id
+      );
+    }
+
+    if (groups.some((g) => !bot_groups?.includes(g))) {
       throw new Error(
         session.text("commands.message-blocker.messages.invalid_group")
       );
@@ -618,12 +622,15 @@ export function apply(ctx: Context, config: Config) {
   ctx.middleware(async (session, next) => {
     // 快速检查：非群聊或非普通成员直接放行
     if (!session.guildId) return next();
-
-    const member = await session.bot.getGuildMember(
-      session.guildId,
-      session.userId
-    );
-    if (!member.roles.includes("member")) return next();
+    let member
+    // 检查当前平台是否支持
+    if (typeof session.bot?.getGuildMember === 'function') {
+      member = await session.bot.getGuildMember(
+        session.guildId,
+        session.userId
+      )
+    };
+    if (!member?.roles?.includes("member")) return next();
 
     // 获取群组规则
     const origin_rules = await ctx.database
@@ -639,11 +646,11 @@ export function apply(ctx: Context, config: Config) {
     const rules = {
       text: config.text_lowercase
         ? origin_rules
-            .filter((r) => r.messageBlockerRule.type === RuleType.TEXT)
-            .map((r) => r.messageBlockerRule.actual.toLowerCase())
+          .filter((r) => r.messageBlockerRule.type === RuleType.TEXT)
+          .map((r) => r.messageBlockerRule.actual.toLowerCase())
         : origin_rules
-            .filter((r) => r.messageBlockerRule.type === RuleType.TEXT)
-            .map((r) => r.messageBlockerRule.actual),
+          .filter((r) => r.messageBlockerRule.type === RuleType.TEXT)
+          .map((r) => r.messageBlockerRule.actual),
       regex: origin_rules
         .filter((r) => r.messageBlockerRule.type === RuleType.REGEX)
         .map((r) => r.messageBlockerRule.actual),
@@ -663,9 +670,9 @@ export function apply(ctx: Context, config: Config) {
     if (text_elements.length) {
       const texts_to_check = config.text_lowercase
         ? text_elements
-            .map((e) => e.attrs.content)
-            .join("")
-            .toLowerCase()
+          .map((e) => e.attrs.content)
+          .join("")
+          .toLowerCase()
         : text_elements.map((e) => e.attrs.content).join("");
 
       if (await checkTextRules(texts_to_check, rules)) {
